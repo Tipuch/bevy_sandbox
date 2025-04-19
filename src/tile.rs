@@ -4,12 +4,44 @@ pub const TILE_SIZE: f32 = 32.0;
 
 #[derive(Component)]
 pub struct Tile {
-    tile_x: usize,
-    tile_y: usize,
-    x: f32,
-    y: f32,
-    z: f32,
-    walkable: bool,
+    pub tile_x: usize,
+    pub tile_y: usize,
+    pub z: f32,
+    pub walkable: bool,
+}
+
+pub fn spawn_tiles(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    screen_bounds: Res<ScreenBounds>,
+) {
+    println!("Spawning tiles...");
+    let texture_handle: Handle<Image> =
+        asset_server.load("sprites/texture_pack/TX Tileset Grass.png");
+    let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 32), 8, 8, None, None);
+    let texture_atlas_layout = texture_atlas_layouts.add(layout);
+    let tile_coordinates = get_tile_to_world(IVec2 { x: 0, y: 0 }, &screen_bounds);
+    commands.spawn((
+        Sprite::from_atlas_image(
+            texture_handle,
+            TextureAtlas {
+                layout: texture_atlas_layout,
+                index: 3,
+            },
+        ),
+        Transform {
+            translation: Vec3::new(tile_coordinates.x, tile_coordinates.y, 0.0),
+            scale: Vec3::splat(1.0),
+            ..default()
+        },
+        Tile {
+            tile_x: 0,
+            tile_y: 0,
+            z: 0.0,
+            walkable: true,
+        },
+    ));
 }
 
 #[derive(Resource)]
@@ -49,7 +81,6 @@ pub fn update_screen_bounds(
 
 pub fn get_world_to_tile(world_pos: Vec2, screen_bounds: &Res<ScreenBounds>) -> IVec2 {
     let offset_from_min = world_pos - screen_bounds.min;
-
     let tile_x = (offset_from_min.x / TILE_SIZE).floor() as i32;
     let tile_y = (offset_from_min.y / TILE_SIZE).floor() as i32;
 
@@ -59,6 +90,5 @@ pub fn get_world_to_tile(world_pos: Vec2, screen_bounds: &Res<ScreenBounds>) -> 
 pub fn get_tile_to_world(tile_pos: IVec2, screen_bounds: &Res<ScreenBounds>) -> Vec2 {
     let world_x = screen_bounds.min.x + (tile_pos.x as f32 * TILE_SIZE) + (TILE_SIZE / 2.0);
     let world_y = screen_bounds.min.y + (tile_pos.y as f32 * TILE_SIZE) + (TILE_SIZE / 2.0);
-
     Vec2::new(world_x, world_y)
 }

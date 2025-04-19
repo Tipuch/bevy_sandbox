@@ -32,6 +32,7 @@ pub struct Movement {
 }
 
 pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
+    println!("Spawning player..");
     let input_map = InputMap::new([
         (MoveAction::Forward, KeyCode::KeyW),
         (MoveAction::Backward, KeyCode::KeyS),
@@ -44,10 +45,12 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
             tile_position: IVec2::new(0, 0),
         })
         .insert(Sprite::from_image(asset_server.load("sprites/test.png")))
-        .insert(Transform::IDENTITY.with_scale(Vec3::splat(PIXEL_SCALE)));
+        .insert(
+            Transform::from_translation(Vec3::new(TILE_SIZE / 2.0, TILE_SIZE / 2.0, 1.0))
+                .with_scale(Vec3::splat(PIXEL_SCALE)),
+        );
 }
-// TODO fix diagonal movement being faster + add collisions -> use a movement intent and then check
-// for collisions before applying the movement.
+
 pub fn start_movement(
     mut commands: Commands,
     screen_bounds: Res<ScreenBounds>,
@@ -73,6 +76,7 @@ pub fn start_movement(
         }
         let is_diagonal = destination_x != 0.0 && destination_y != 0.0;
         let start = get_tile_to_world(player.tile_position, &screen_bounds);
+
         let target = Vec2::new(
             start.x + (destination_x * TILE_SIZE),
             start.y + (destination_y * TILE_SIZE),
@@ -100,8 +104,8 @@ pub fn handle_movement(
         movement.progress = movement.progress.min(1.0);
         let start_2d = get_tile_to_world(player.tile_position, &screen_bounds);
         //TODO add Z to the equation, in case we're going up or down
-        let start = Vec3::new(start_2d.x, start_2d.y, 0.0);
-        let end = Vec3::new(movement.target.x, movement.target.y, 0.0);
+        let start = Vec3::new(start_2d.x, start_2d.y, 1.0);
+        let end = Vec3::new(movement.target.x, movement.target.y, 1.0);
         transform.translation = start.lerp(end, movement.progress);
         if movement.progress >= 1.0 {
             player.tile_position = get_world_to_tile(movement.target, &screen_bounds);
