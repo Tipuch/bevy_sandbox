@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use bevy::{
     asset::AssetServer,
     ecs::{
@@ -14,7 +15,7 @@ use leafwing_input_manager::{
 };
 
 use crate::actions::MoveAction;
-use crate::tile::{ScreenBounds, TILE_SIZE, get_tile_to_world, get_world_to_tile};
+use crate::tile::{TILE_SIZE, get_tile_to_world, get_world_to_tile};
 
 const PIXEL_SCALE: f32 = 1.0;
 const VELOCITY: f32 = 8.0;
@@ -22,17 +23,18 @@ const VELOCITY: f32 = 8.0;
 #[derive(Component)]
 pub struct Player {
     tile_position: IVec2,
+    z: f32,
 }
 
 #[derive(Component)]
 pub struct Movement {
-    target: Vec2,
+    start: Vec3,
+    target: Vec3,
     progress: f32,
     speed: f32,
 }
 
 pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
-    println!("Spawning player..");
     let input_map = InputMap::new([
         (MoveAction::Forward, KeyCode::KeyW),
         (MoveAction::Backward, KeyCode::KeyS),
@@ -43,6 +45,7 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn(InputManagerBundle::with_map(input_map))
         .insert(Player {
             tile_position: IVec2::new(0, 0),
+            z: 1.0,
         })
         .insert(Sprite::from_image(asset_server.load("sprites/test.png")))
         .insert(
@@ -53,7 +56,7 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 pub fn start_movement(
     mut commands: Commands,
-    screen_bounds: Res<ScreenBounds>,
+    windows: Query<&Window, With<PrimaryWindow>>,
     mut query: Query<(Entity, &ActionState<MoveAction>, &Player), Without<Movement>>,
 ) {
     if let Ok((entity, action_state, player)) = query.get_single_mut() {
@@ -74,42 +77,48 @@ pub fn start_movement(
         if destination_x == 0.0 && destination_y == 0.0 {
             return;
         }
-        let is_diagonal = destination_x != 0.0 && destination_y != 0.0;
-        let start = get_tile_to_world(player.tile_position, &screen_bounds);
-
-        let target = Vec2::new(
-            start.x + (destination_x * TILE_SIZE),
-            start.y + (destination_y * TILE_SIZE),
-        );
-        commands.entity(entity).insert(Movement {
-            target,
-            progress: 0.0,
-            speed: if is_diagonal {
-                VELOCITY / 2.0f32.sqrt()
-            } else {
-                VELOCITY
-            },
-        });
+        if let Ok(window) = windows.get_single() {
+            let is_diagonal = destination_x != 0.0 && destination_y != 0.0;
+            let start_2d = get_tile_to_world(player.tile_position, window);
+            let start = Vec3::new(start_2d.x, start_2d.y, player.z);
+            let target = Vec3::new(
+                start.x + (destination_x * TILE_SIZE),
+                start.y + (destination_y * TILE_SIZE),
+                player.z,
+            );
+            commands.entity(entity).insert(Movement {
+                start,
+                target,
+                progress: 0.0,
+                speed: if is_diagonal {
+                    VELOCITY / 2.0f32.sqrt()
+                } else {
+                    VELOCITY
+                },
+            });
+        }
     }
 }
 
 pub fn handle_movement(
     time: Res<Time>,
-    screen_bounds: Res<ScreenBounds>,
     mut commands: Commands,
+    windows: Query<&Window, With<PrimaryWindow>>,
     mut query: Query<(Entity, &mut Transform, &mut Movement, &mut Player)>,
 ) {
     if let Ok((entity, mut transform, mut movement, mut player)) = query.get_single_mut() {
         movement.progress += time.delta_secs() * movement.speed;
         movement.progress = movement.progress.min(1.0);
-        let start_2d = get_tile_to_world(player.tile_position, &screen_bounds);
-        //TODO add Z to the equation, in case we're going up or down
-        let start = Vec3::new(start_2d.x, start_2d.y, 1.0);
-        let end = Vec3::new(movement.target.x, movement.target.y, 1.0);
-        transform.translation = start.lerp(end, movement.progress);
-        if movement.progress >= 1.0 {
-            player.tile_position = get_world_to_tile(movement.target, &screen_bounds);
-            commands.entity(entity).remove::<Movement>();
+        if let Ok(window) = windows.get_single() {
+            //TODO add Z to the equation, in case we're going up or down
+            let start = Vec3::new(movement.start.x, movement.start.y, movement.start.z);
+            let end = Vec3::new(movement.target.x, movement.target.y, movement.target.z);
+            transform.translation = start.lerp(end, movement.progress);
+            if movement.progress >= 1.0 {
+                player.tile_position =
+                    get_world_to_tile(Vec2::new(movement.target.x, movement.target.y), window);
+                commands.entity(entity).remove::<Movement>();
+            }
         }
     }
 }
