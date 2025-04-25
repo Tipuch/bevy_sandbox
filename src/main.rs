@@ -1,4 +1,4 @@
-use bevy::{prelude::*, sprite::Wireframe2dPlugin};
+use bevy::prelude::*;
 use bevy_quadtree::{CollisionCircle, CollisionRect, QuadTreePlugin};
 use leafwing_input_manager::plugin::InputManagerPlugin;
 use player::{handle_movement, start_movement};
