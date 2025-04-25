@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Wireframe2dPlugin};
 use bevy_quadtree::{CollisionCircle, CollisionRect, QuadTreePlugin};
 use leafwing_input_manager::plugin::InputManagerPlugin;
 use player::{handle_movement, start_movement};
@@ -17,12 +17,12 @@ fn main() {
             ),
             40,
             8,
-            100,
-            100,
+            10000,
+            10000,
             0,
             0,
             20,
-            114514,
+            1,
         >::default())
         .add_plugins(InputManagerPlugin::<actions::MoveAction>::default())
         .add_systems(Startup, (setup, tile::spawn_tiles, player::spawn_player))
