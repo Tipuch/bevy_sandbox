@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use bevy_quadtree::{CollisionCircle, CollisionRect, QuadTreePlugin};
 use leafwing_input_manager::plugin::InputManagerPlugin;
-use player::{handle_movement, start_movement};
+use player::{
+    execute_movement_animation, handle_movement, start_movement, start_movement_animation,
+};
 
 mod actions;
 mod player;
@@ -26,7 +28,14 @@ fn main() {
         >::default())
         .add_plugins(InputManagerPlugin::<actions::MoveAction>::default())
         .add_systems(Startup, (setup, tile::spawn_tiles, player::spawn_player))
-        .add_systems(Update, handle_movement)
+        .add_systems(
+            Update,
+            (
+                handle_movement,
+                start_movement_animation,
+                execute_movement_animation,
+            ),
+        )
         .add_systems(FixedUpdate, start_movement)
         .run();
 }

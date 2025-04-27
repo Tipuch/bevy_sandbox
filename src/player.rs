@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy::{
@@ -37,6 +39,29 @@ pub struct Movement {
     speed: f32,
 }
 
+#[derive(Component)]
+pub struct AnimationConfig {
+    first_sprite_index: usize,
+    last_sprite_index: usize,
+    fps: u8,
+    frame_timer: Timer,
+}
+
+impl AnimationConfig {
+    fn new(first_sprite_index: usize, last_sprite_index: usize, fps: u8) -> Self {
+        Self {
+            first_sprite_index,
+            last_sprite_index,
+            fps,
+            frame_timer: Self::timer_from_fps(fps),
+        }
+    }
+
+    fn timer_from_fps(fps: u8) -> Timer {
+        Timer::new(Duration::from_secs_f32(1.0 / (fps as f32)), TimerMode::Once)
+    }
+}
+
 pub fn spawn_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -50,9 +75,9 @@ pub fn spawn_player(
         (MoveAction::Right, KeyCode::KeyD),
     ]);
 
-    let texture_handle: Handle<Image> =
-        asset_server.load("sprites/texture_pack/TX Tileset Grass.png");
-    let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 32), 8, 8, None, None);
+    let texture_handle: Handle<Image> = asset_server.load("sprites/char.png");
+    let layout =
+        TextureAtlasLayout::from_grid(UVec2::new(32, 32), 8, 10, None, Some(UVec2::new(0, 5)));
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
     if let Ok(window) = windows.get_single() {
         let tile_pos = IVec2::new(0, 0);
@@ -71,7 +96,7 @@ pub fn spawn_player(
                 texture_handle.clone(),
                 TextureAtlas {
                     layout: texture_atlas_layout.clone(),
-                    index: 7,
+                    index: 0,
                 },
             ))
             .insert(
@@ -152,6 +177,58 @@ pub fn handle_movement(
                 player.tile_position =
                     get_world_to_tile(Vec2::new(movement.target.x, movement.target.y), window);
                 commands.entity(entity).remove::<Movement>();
+            }
+        }
+    }
+}
+
+pub fn start_movement_animation(
+    mut commands: Commands,
+    query: Query<(Entity, &ActionState<MoveAction>), Without<AnimationConfig>>,
+) {
+    if let Ok((entity, action_state)) = query.get_single() {
+        if action_state.pressed(&MoveAction::Forward) {
+            // set start_index & end index properly for forward movement
+            commands
+                .entity(entity)
+                .insert(AnimationConfig::new(60, 69, 10));
+        } else if action_state.pressed(&MoveAction::Backward) {
+            // set start_index & end index properly for forward movement
+            commands
+                .entity(entity)
+                .insert(AnimationConfig::new(40, 49, 10));
+        } else if action_state.pressed(&MoveAction::Left) {
+            // set start_index & end index properly for forward movement
+            commands
+                .entity(entity)
+                .insert(AnimationConfig::new(50, 59, 10));
+        } else if action_state.pressed(&MoveAction::Right) {
+            // set start_index & end index properly for forward movement
+            commands
+                .entity(entity)
+                .insert(AnimationConfig::new(70, 79, 10));
+        }
+    }
+}
+
+// timer not working iterating more than x times per second
+pub fn execute_movement_animation(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut Sprite, &mut AnimationConfig)>,
+) {
+    if let Ok((entity, mut sprite, mut animation_config)) = query.get_single_mut() {
+        animation_config.frame_timer.tick(time.delta());
+        if animation_config.frame_timer.just_finished() {
+            if let Some(atlas) = &mut sprite.texture_atlas {
+                if atlas.index == animation_config.last_sprite_index {
+                    atlas.index = animation_config.first_sprite_index;
+                    commands.entity(entity).remove::<AnimationConfig>();
+                } else {
+                    atlas.index += 1;
+                    animation_config.frame_timer =
+                        AnimationConfig::timer_from_fps(animation_config.fps);
+                }
             }
         }
     }
