@@ -76,8 +76,13 @@ pub fn spawn_player(
     ]);
 
     let texture_handle: Handle<Image> = asset_server.load("sprites/char.png");
-    let layout =
-        TextureAtlasLayout::from_grid(UVec2::new(32, 32), 8, 10, None, Some(UVec2::new(0, 5)));
+    let layout = TextureAtlasLayout::from_grid(
+        UVec2::new(32, 32),
+        8,
+        10,
+        Some(UVec2::new(0, 0)),
+        Some(UVec2::new(0, 0)),
+    );
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
     if let Ok(window) = windows.get_single() {
         let tile_pos = IVec2::new(0, 0);
@@ -184,29 +189,44 @@ pub fn handle_movement(
 
 pub fn start_movement_animation(
     mut commands: Commands,
-    query: Query<(Entity, &ActionState<MoveAction>), Without<AnimationConfig>>,
+    mut query: Query<(Entity, &ActionState<MoveAction>, &mut Sprite), Without<AnimationConfig>>,
 ) {
-    if let Ok((entity, action_state)) = query.get_single() {
+    if let Ok((entity, action_state, mut sprite)) = query.get_single_mut() {
+        let mut first_sprite_index: Option<usize> = None;
+        let index: usize;
         if action_state.pressed(&MoveAction::Forward) {
             // set start_index & end index properly for forward movement
+            index = 60;
+            first_sprite_index = Some(index);
             commands
                 .entity(entity)
-                .insert(AnimationConfig::new(60, 69, 10));
+                .insert(AnimationConfig::new(index, 69, 10));
         } else if action_state.pressed(&MoveAction::Backward) {
             // set start_index & end index properly for forward movement
+            index = 40;
+            first_sprite_index = Some(index);
             commands
                 .entity(entity)
-                .insert(AnimationConfig::new(40, 49, 10));
+                .insert(AnimationConfig::new(index, 49, 10));
         } else if action_state.pressed(&MoveAction::Left) {
             // set start_index & end index properly for forward movement
+            index = 50;
+            first_sprite_index = Some(index);
             commands
                 .entity(entity)
-                .insert(AnimationConfig::new(50, 59, 10));
+                .insert(AnimationConfig::new(index, 59, 10));
         } else if action_state.pressed(&MoveAction::Right) {
             // set start_index & end index properly for forward movement
+            index = 70;
+            first_sprite_index = Some(index);
             commands
                 .entity(entity)
-                .insert(AnimationConfig::new(70, 79, 10));
+                .insert(AnimationConfig::new(index, 79, 10));
+        }
+        if let Some(atlas) = &mut sprite.texture_atlas {
+            if let Some(index) = first_sprite_index {
+                atlas.index = index;
+            }
         }
     }
 }
@@ -225,6 +245,7 @@ pub fn execute_movement_animation(
                     atlas.index = animation_config.first_sprite_index;
                     commands.entity(entity).remove::<AnimationConfig>();
                 } else {
+                    println!("{}", atlas.index);
                     atlas.index += 1;
                     animation_config.frame_timer =
                         AnimationConfig::timer_from_fps(animation_config.fps);
