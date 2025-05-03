@@ -89,3 +89,6 @@ pub fn get_tile_to_world(tile_pos: IVec2, window: &Window) -> Vec2 {
     let world_y = (tile_pos.y as f32 * TILE_SIZE) + (TILE_SIZE / 2.0) - offset.y;
     Vec2::new(world_x, world_y)
 }
+
+// TODO add resource to get the tile map limits max_x and max_y min_x min_y such that the camera
+// cannot show outside of that.

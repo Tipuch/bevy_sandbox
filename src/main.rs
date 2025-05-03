@@ -15,7 +15,7 @@ fn main() {
         .add_plugins(QuadTreePlugin::<
             (
                 (CollisionCircle, GlobalTransform),
-                (CollisionRect, (GlobalTransform)),
+                (CollisionRect, GlobalTransform),
             ),
             40,
             8,

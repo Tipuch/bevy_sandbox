@@ -77,9 +77,9 @@ pub fn spawn_player(
 
     let texture_handle: Handle<Image> = asset_server.load("sprites/char.png");
     let layout = TextureAtlasLayout::from_grid(
-        UVec2::new(32, 32),
-        8,
-        10,
+        UVec2::new(64, 64),
+        13,
+        54,
         Some(UVec2::new(0, 0)),
         Some(UVec2::new(0, 0)),
     );
@@ -101,7 +101,7 @@ pub fn spawn_player(
                 texture_handle.clone(),
                 TextureAtlas {
                     layout: texture_atlas_layout.clone(),
-                    index: 0,
+                    index: 26,
                 },
             ))
             .insert(
@@ -196,32 +196,32 @@ pub fn start_movement_animation(
         let index: usize;
         if action_state.pressed(&MoveAction::Forward) {
             // set start_index & end index properly for forward movement
-            index = 60;
+            index = 104;
             first_sprite_index = Some(index);
             commands
                 .entity(entity)
-                .insert(AnimationConfig::new(index, 69, 10));
+                .insert(AnimationConfig::new(index, 112, 9));
         } else if action_state.pressed(&MoveAction::Backward) {
             // set start_index & end index properly for forward movement
-            index = 40;
+            index = 130;
             first_sprite_index = Some(index);
             commands
                 .entity(entity)
-                .insert(AnimationConfig::new(index, 49, 10));
+                .insert(AnimationConfig::new(index, 138, 9));
         } else if action_state.pressed(&MoveAction::Left) {
             // set start_index & end index properly for forward movement
-            index = 50;
+            index = 117;
             first_sprite_index = Some(index);
             commands
                 .entity(entity)
-                .insert(AnimationConfig::new(index, 59, 10));
+                .insert(AnimationConfig::new(index, 125, 9));
         } else if action_state.pressed(&MoveAction::Right) {
             // set start_index & end index properly for forward movement
-            index = 70;
+            index = 143;
             first_sprite_index = Some(index);
             commands
                 .entity(entity)
-                .insert(AnimationConfig::new(index, 79, 10));
+                .insert(AnimationConfig::new(index, 151, 9));
         }
         if let Some(atlas) = &mut sprite.texture_atlas {
             if let Some(index) = first_sprite_index {
