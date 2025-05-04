@@ -899,7 +899,6 @@ dependencies = [
  "bevy_ecs",
  "bevy_log",
  "bevy_math",
- "bevy_sprite",
  "bevy_transform",
  "parking_lot",
  "paste",

@@ -18,11 +18,12 @@ use leafwing_input_manager::{
     prelude::{ActionState, InputMap},
 };
 
-use crate::actions::MoveAction;
+use crate::actions::{MoveAction, get_animation_from_action};
 use crate::tile::{TILE_SIZE, get_tile_to_world, get_world_to_tile};
 
 const PIXEL_SCALE: f32 = 1.0;
 const VELOCITY: f32 = 8.0;
+const CHARACTER_HITBOX_SIZE: Vec2 = Vec2::new(30.0, 23.0);
 
 type CollisionQuadTree = QuadTree<1>;
 
@@ -49,7 +50,7 @@ pub struct AnimationConfig {
 }
 
 impl AnimationConfig {
-    fn new(first_sprite_index: usize, last_sprite_index: usize, fps: u8) -> Self {
+    pub fn new(first_sprite_index: usize, last_sprite_index: usize, fps: u8) -> Self {
         Self {
             first_sprite_index,
             last_sprite_index,
@@ -95,16 +96,18 @@ pub fn spawn_player(
                 z: 1.0,
             })
             .insert(CollisionRect::from(Rect::from_center_size(
-                world_pos,
-                Vec2::new(TILE_SIZE, TILE_SIZE),
+                Vec2::new(world_pos.x, world_pos.y),
+                CHARACTER_HITBOX_SIZE,
             )))
-            .insert(Sprite::from_atlas_image(
-                texture_handle.clone(),
-                TextureAtlas {
+            .insert(Sprite {
+                image: texture_handle.clone(),
+                texture_atlas: Some(TextureAtlas {
                     layout: texture_atlas_layout.clone(),
                     index: 26,
-                },
-            ))
+                }),
+                anchor: bevy::sprite::Anchor::Custom(Vec2::new(0.0, -0.25)),
+                ..Default::default()
+            })
             .insert(
                 Transform::from_translation(Vec3::new(world_pos.x, world_pos.y, 1.0))
                     .with_scale(Vec3::splat(PIXEL_SCALE)),
@@ -147,7 +150,7 @@ pub fn start_movement(
             );
             let collision_query =
                 quadtree.query::<QOr<(Overlap, Contain, Contained)>>(&CollisionRect::from(
-                    Rect::from_center_size(Vec2::new(target.x, target.y), Vec2::new(10.0, 10.0)),
+                    Rect::from_center_size(Vec2::new(target.x, target.y), Vec2::new(15.0, 15.0)),
                 ));
             if collision_query.is_empty() {
                 commands.entity(entity).insert(Movement {
@@ -202,64 +205,37 @@ pub fn start_movement_animation(
     if let Ok((entity, action_state, mut sprite, animation_config_option)) =
         query_with_animation.query().get_single_mut()
     {
-        let first_sprite_index: usize;
-        let last_sprite_index: usize;
-        let fps: u8;
         if action_state.pressed(&MoveAction::Forward) {
-            // set start_index & end index properly for forward movement
-            first_sprite_index = 104;
-            last_sprite_index = 112;
-            fps = 9;
             overwrite_animation(
                 commands,
                 sprite.reborrow(),
                 animation_config_option,
                 entity,
-                first_sprite_index,
-                last_sprite_index,
-                fps,
+                get_animation_from_action(MoveAction::Forward),
             );
         } else if action_state.pressed(&MoveAction::Backward) {
-            // set start_index & end index properly for forward movement
-            first_sprite_index = 130;
-            last_sprite_index = 138;
-            fps = 9;
             overwrite_animation(
                 commands,
                 sprite.reborrow(),
                 animation_config_option,
                 entity,
-                first_sprite_index,
-                last_sprite_index,
-                fps,
+                get_animation_from_action(MoveAction::Backward),
             );
         } else if action_state.pressed(&MoveAction::Left) {
-            // set start_index & end index properly for forward movement
-            first_sprite_index = 117;
-            last_sprite_index = 125;
-            fps = 9;
             overwrite_animation(
                 commands,
                 sprite.reborrow(),
                 animation_config_option,
                 entity,
-                first_sprite_index,
-                last_sprite_index,
-                fps,
+                get_animation_from_action(MoveAction::Left),
             );
         } else if action_state.pressed(&MoveAction::Right) {
-            // set start_index & end index properly for forward movement
-            first_sprite_index = 143;
-            last_sprite_index = 151;
-            fps = 9;
             overwrite_animation(
                 commands,
                 sprite.reborrow(),
                 animation_config_option,
                 entity,
-                first_sprite_index,
-                last_sprite_index,
-                fps,
+                get_animation_from_action(MoveAction::Right),
             );
         } else if let Ok((Some(animation_config), mut sprite, _player)) =
             animation_query.get_single_mut()
@@ -279,34 +255,24 @@ fn overwrite_animation(
     mut sprite: Mut<'_, Sprite>,
     animation_config_option: Option<&AnimationConfig>,
     entity: Entity,
-    first_sprite_index: usize,
-    last_sprite_index: usize,
-    fps: u8,
+    new_animation_config: AnimationConfig,
 ) {
     if let Some(animation_config) = animation_config_option {
-        if animation_config.first_sprite_index != first_sprite_index {
+        if animation_config.first_sprite_index != new_animation_config.first_sprite_index {
             if let Some(atlas) = &mut sprite.texture_atlas {
                 atlas.index = animation_config.first_sprite_index;
                 commands.entity(entity).remove::<AnimationConfig>();
             }
             if let Some(atlas) = &mut sprite.texture_atlas {
-                atlas.index = first_sprite_index;
+                atlas.index = new_animation_config.first_sprite_index;
             }
-            commands.entity(entity).insert(AnimationConfig::new(
-                first_sprite_index,
-                last_sprite_index,
-                fps,
-            ));
+            commands.entity(entity).insert(new_animation_config);
         }
     } else {
         if let Some(atlas) = &mut sprite.texture_atlas {
-            atlas.index = first_sprite_index;
+            atlas.index = new_animation_config.first_sprite_index;
         }
-        commands.entity(entity).insert(AnimationConfig::new(
-            first_sprite_index,
-            last_sprite_index,
-            fps,
-        ));
+        commands.entity(entity).insert(new_animation_config);
     }
 }
 
