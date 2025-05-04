@@ -1,76 +1,15 @@
 use bevy::{prelude::*, window::PrimaryWindow};
+use bevy_ecs_tiled::{
+    map::TiledMapHandle,
+    prelude::{TiledMap, TiledMapAnchor},
+};
 use bevy_quadtree::CollisionRect;
 
 pub const TILE_SIZE: f32 = 32.0;
 
-#[derive(Component)]
-pub struct Tile {
-    pub tile_position: IVec2,
-    pub z: f32,
-    pub walkable: bool,
-}
-
-pub fn spawn_tiles(
-    asset_server: Res<AssetServer>,
-    mut commands: Commands,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    windows: Query<&Window, With<PrimaryWindow>>,
-) {
-    println!("Spawning tiles...");
-    let texture_handle: Handle<Image> =
-        asset_server.load("sprites/texture_pack/TX Tileset Grass.png");
-    let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 32), 8, 8, None, None);
-    let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    if let Ok(window) = windows.get_single() {
-        let tile_coordinates = get_tile_to_world(IVec2 { x: 0, y: 0 }, window);
-        commands.spawn((
-            Sprite::from_atlas_image(
-                texture_handle.clone(),
-                TextureAtlas {
-                    layout: texture_atlas_layout.clone(),
-                    index: 3,
-                },
-            ),
-            Transform {
-                translation: Vec3::new(tile_coordinates.x, tile_coordinates.y, 0.0),
-                scale: Vec3::splat(1.0),
-                ..default()
-            },
-            Tile {
-                tile_position: IVec2 { x: 0, y: 0 },
-                z: 0.0,
-                walkable: true,
-            },
-        ));
-
-        let tile_coordinates = get_tile_to_world(IVec2 { x: 5, y: 5 }, window);
-        commands.spawn((
-            Sprite::from_atlas_image(
-                texture_handle,
-                TextureAtlas {
-                    layout: texture_atlas_layout,
-                    index: 3,
-                },
-            ),
-            Transform {
-                translation: Vec3::new(tile_coordinates.x, tile_coordinates.y, 0.0),
-                scale: Vec3::splat(1.0),
-                ..default()
-            },
-            Tile {
-                tile_position: IVec2 { x: 0, y: 0 },
-                z: 0.0,
-                walkable: false,
-            },
-            CollisionRect::from(Rect::from_corners(
-                tile_coordinates,
-                Vec2::new(
-                    tile_coordinates.x + TILE_SIZE,
-                    tile_coordinates.y + TILE_SIZE,
-                ),
-            )),
-        ));
-    }
+pub fn spawn_map(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let map_handle: Handle<TiledMap> = asset_server.load("sprites/texture_pack/untitled.tmx");
+    commands.spawn((TiledMapHandle(map_handle), TiledMapAnchor::Center));
 }
 
 pub fn get_world_to_tile(world_pos: Vec2, window: &Window) -> IVec2 {

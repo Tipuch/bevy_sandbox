@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_ecs_tiled::TiledMapPlugin;
 use bevy_quadtree::{CollisionCircle, CollisionRect, QuadTreePlugin};
 use leafwing_input_manager::plugin::InputManagerPlugin;
 use player::{
@@ -12,6 +13,7 @@ mod tile;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugins(TiledMapPlugin::default())
         .add_plugins(QuadTreePlugin::<
             (
                 (CollisionCircle, GlobalTransform),
@@ -27,7 +29,7 @@ fn main() {
             1,
         >::default())
         .add_plugins(InputManagerPlugin::<actions::MoveAction>::default())
-        .add_systems(Startup, (setup, tile::spawn_tiles, player::spawn_player))
+        .add_systems(Startup, (setup, tile::spawn_map, player::spawn_player))
         .add_systems(
             Update,
             (
