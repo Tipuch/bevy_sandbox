@@ -191,7 +191,7 @@ pub fn handle_movement(
 pub fn start_movement_animation(
     mut commands: Commands,
     mut query: Query<(Entity, &ActionState<MoveAction>)>,
-    mut animation_query: Query<(Option<&AnimationConfig>, &mut Sprite)>,
+    mut animation_query: Query<(Option<&AnimationConfig>, &mut Sprite, &Player)>,
 ) {
     let mut query_with_animation: QueryLens<(
         Entity,
@@ -205,7 +205,6 @@ pub fn start_movement_animation(
         let first_sprite_index: usize;
         let last_sprite_index: usize;
         let fps: u8;
-
         if action_state.pressed(&MoveAction::Forward) {
             // set start_index & end index properly for forward movement
             first_sprite_index = 104;
@@ -262,7 +261,9 @@ pub fn start_movement_animation(
                 last_sprite_index,
                 fps,
             );
-        } else if let Ok((Some(animation_config), mut sprite)) = animation_query.get_single_mut() {
+        } else if let Ok((Some(animation_config), mut sprite, _player)) =
+            animation_query.get_single_mut()
+        {
             {
                 if let Some(atlas) = &mut sprite.texture_atlas {
                     atlas.index = animation_config.first_sprite_index;
@@ -284,14 +285,12 @@ fn overwrite_animation(
 ) {
     if let Some(animation_config) = animation_config_option {
         if animation_config.first_sprite_index != first_sprite_index {
-            println!("overwriting animation config");
             if let Some(atlas) = &mut sprite.texture_atlas {
                 atlas.index = animation_config.first_sprite_index;
                 commands.entity(entity).remove::<AnimationConfig>();
             }
             if let Some(atlas) = &mut sprite.texture_atlas {
                 atlas.index = first_sprite_index;
-                println!("set initial frame");
             }
             commands.entity(entity).insert(AnimationConfig::new(
                 first_sprite_index,
@@ -300,10 +299,8 @@ fn overwrite_animation(
             ));
         }
     } else {
-        println!("inserting new animation config");
         if let Some(atlas) = &mut sprite.texture_atlas {
             atlas.index = first_sprite_index;
-            println!("set initial frame");
         }
         commands.entity(entity).insert(AnimationConfig::new(
             first_sprite_index,
