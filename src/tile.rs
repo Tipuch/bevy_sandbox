@@ -1,12 +1,5 @@
 use bevy::prelude::*;
-use bevy::{
-    color::palettes::css::{PURPLE, RED},
-    ecs::{component::ComponentId, world::DeferredWorld},
-    prelude::*,
-};
 use bevy_ecs_tiled::prelude::*;
-use bevy_ecs_tiled::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
 use bevy_quadtree::CollisionRect;
 
 pub const TILE_SIZE: f32 = 32.0;
@@ -33,26 +26,40 @@ pub fn get_tile_to_world(tile_pos: IVec2, window: &Window) -> Vec2 {
     Vec2::new(world_x, world_y)
 }
 
-// A typical usecase for regular events is to update components associated with tiles, objects or layers.
-// Here, we will add a small offset on the Z axis to our objects to prevent them
-// from Z-fighting if they are on the same layer (by default, all objects on a given layer have the same Z offset)
-fn evt_object_created(
-    mut object_events: EventReader<TiledObjectCreated>,
-    mut object_query: Query<(&Name, &mut Transform), With<TiledMapObject>>,
-    mut z_offset: Local<f32>,
-) {
-    for e in object_events.read() {
-        let Ok((name, mut transform)) = object_query.get_mut(e.entity) else {
-            return;
-        };
+#[derive(Default, Debug, Clone, Reflect)]
+#[reflect(Default, Debug)]
+pub struct QuadTreePhysicsBackend;
 
-        info!("=> Received TiledObjectCreated event for object '{}'", name);
-
-        // Obviously, this is a very naive implementation and you would
-        // probably want to do something else in a real usecase
-        info!("Apply z-offset = {:?}", *z_offset);
-        transform.translation.z += *z_offset;
-        *z_offset += 0.01;
+// This simple example will just spawn an entity with a `MyCustomPhysicsComponent` Component,
+// at the center of where the Tiled collider is.
+impl TiledPhysicsBackend for QuadTreePhysicsBackend {
+    fn spawn_colliders(
+        &self,
+        commands: &mut Commands,
+        _tiled_map: &TiledMap,
+        _filter: &TiledNameFilter,
+        collider: &TiledCollider,
+    ) -> Vec<TiledColliderSpawnInfos> {
+        match collider {
+            TiledCollider::Object {
+                layer_id: _,
+                object_id: _,
+            } => {
+                vec![TiledColliderSpawnInfos {
+                    name: String::from("Colliders[Object]"),
+                    entity: commands
+                        .spawn(CollisionRect::new(Rect::from_corners(
+                            Vec2::default(),
+                            Vec2::splat(TILE_SIZE),
+                        )))
+                        .id(),
+                    transform: Transform::default(),
+                }]
+            }
+            TiledCollider::TilesLayer { layer_id: _ } => {
+                vec![]
+            }
+        }
     }
 }
 

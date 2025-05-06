@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="left-up" width="30" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="2" nextobjectid="1">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="left-up" width="30" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="26">
  <tileset firstgid="1" source="TX Tileset Grass.tsx"/>
  <tileset firstgid="65" source="TX Tileset Wall.tsx"/>
  <layer id="1" name="Tile Layer 1" width="30" height="20">
@@ -26,4 +26,30 @@
 25,25,25,26,18,18,18,18,18,18,18,18,18,10,59,60,11,11,18,19,29,17,17,17,17,18,18,19,26,27
 </data>
  </layer>
+ <objectgroup id="2" name="Colliders">
+  <object id="2" x="400" y="241" width="1" height="1"/>
+  <object id="3" x="400" y="272" width="1" height="1" rotation="1.21888"/>
+  <object id="4" x="400" y="305" width="0.1875" height="0.5"/>
+  <object id="5" x="432" y="305" width="1" height="1"/>
+  <object id="6" x="400" y="335" width="1" height="1"/>
+  <object id="7" x="400" y="365" width="1" height="1" rotation="6.34019"/>
+  <object id="8" x="431.75" y="240.5" width="1" height="1"/>
+  <object id="9" x="431" y="271.75" width="1" height="1"/>
+  <object id="10" x="462.75" y="271.5" width="1" height="1"/>
+  <object id="11" x="463" y="304" width="1" height="1"/>
+  <object id="12" x="462.75" y="331.75" width="1" height="1"/>
+  <object id="13" x="464.75" y="365.75" width="1" height="1"/>
+  <object id="14" x="431.25" y="366" width="1" height="1"/>
+  <object id="15" x="495.25" y="365.75" width="1" height="1"/>
+  <object id="16" x="526" y="365.75" width="1" height="1"/>
+  <object id="17" x="526.5" y="336.75" width="1" height="1"/>
+  <object id="18" x="494.75" y="337" width="1" height="1"/>
+  <object id="19" x="493.5" y="304.25" width="1" height="1"/>
+  <object id="20" x="526" y="305" width="1" height="1"/>
+  <object id="21" x="525" y="272" width="1" height="1"/>
+  <object id="22" x="492.75" y="271.25" width="1" height="1"/>
+  <object id="23" x="493" y="241" width="1" height="1"/>
+  <object id="24" x="526.5" y="241.25" width="1" height="1"/>
+  <object id="25" x="462.25" y="241.75" width="1" height="1"/>
+ </objectgroup>
 </map>

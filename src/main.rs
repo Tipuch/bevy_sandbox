@@ -1,10 +1,11 @@
 use bevy::prelude::*;
-use bevy_ecs_tiled::TiledMapPlugin;
+use bevy_ecs_tiled::{TiledMapPlugin, prelude::TiledPhysicsPlugin};
 use bevy_quadtree::{CollisionCircle, CollisionRect, QuadTreePlugin};
 use leafwing_input_manager::plugin::InputManagerPlugin;
 use player::{
     execute_movement_animation, handle_movement, start_movement, start_movement_animation,
 };
+use tile::QuadTreePhysicsBackend;
 
 mod actions;
 mod player;
@@ -28,6 +29,7 @@ fn main() {
             20,
             1,
         >::default())
+        .add_plugins(TiledPhysicsPlugin::<QuadTreePhysicsBackend>::default())
         .add_plugins(InputManagerPlugin::<actions::MoveAction>::default())
         .add_systems(Startup, (setup, tile::spawn_map, player::spawn_player))
         .add_systems(

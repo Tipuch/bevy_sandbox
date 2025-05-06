@@ -7,7 +7,7 @@ edition = "2024"
 bevy = "0.15.3"
 bevy_quadtree = {version = "0.15.2"}
 leafwing-input-manager = "0.16.0"
-bevy_ecs_tiled = "0.6"
+bevy_ecs_tiled = {version="0.6", features=["physics"]}
 bevy_ecs_tilemap = "0.15"
 
 [profile.dev.package."*"]
