@@ -1,12 +1,40 @@
 use bevy::prelude::*;
 use bevy_ecs_tiled::prelude::*;
+use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapSize};
 use bevy_quadtree::CollisionRect;
 
 pub const TILE_SIZE: f32 = 32.0;
 
+#[derive(Component)]
+pub struct MainTileMap;
+
 pub fn spawn_map(mut commands: Commands, asset_server: Res<AssetServer>) {
     let map_handle: Handle<TiledMap> = asset_server.load("sprites/texture_pack/untitled.tmx");
-    commands.spawn((TiledMapHandle(map_handle), TiledMapAnchor::Center));
+
+    commands.spawn((
+        TiledMapHandle(map_handle),
+        TiledMapAnchor::Center,
+        MainTileMap,
+        TilemapGridSize {
+            x: TILE_SIZE,
+            y: TILE_SIZE,
+        },
+    ));
+}
+
+pub fn process_loaded_tiled_maps(
+    mut commands: Commands,
+    tiled_map_assets: Res<Assets<TiledMap>>,
+    mut tiled_map_events: EventReader<TiledMapCreated>,
+    maps_query: Query<Entity, (With<MainTileMap>, Without<TilemapSize>)>,
+) {
+    for entity in maps_query.iter() {
+        for event in tiled_map_events.read() {
+            if let Some(tiled_map) = event.get_map_asset(&tiled_map_assets) {
+                commands.entity(entity).insert(tiled_map.tilemap_size);
+            }
+        }
+    }
 }
 
 pub fn get_world_to_tile(world_pos: Vec2, window: &Window) -> IVec2 {

@@ -12,6 +12,7 @@ use bevy::{
     input::keyboard::KeyCode,
     sprite::Sprite,
 };
+use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapSize};
 use bevy_quadtree::{CollisionRect, Contain, Contained, Overlap, QOr, QuadTree};
 use leafwing_input_manager::{
     InputManagerBundle,
@@ -19,7 +20,7 @@ use leafwing_input_manager::{
 };
 
 use crate::actions::{MoveAction, get_animation_from_action};
-use crate::tile::{TILE_SIZE, get_tile_to_world, get_world_to_tile};
+use crate::tile::{MainTileMap, TILE_SIZE, get_tile_to_world, get_world_to_tile};
 
 const PIXEL_SCALE: f32 = 1.0;
 const VELOCITY: f32 = 8.0;
@@ -119,6 +120,7 @@ pub fn start_movement(
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     mut query: Query<(Entity, &ActionState<MoveAction>, &Player), Without<Movement>>,
+    tilemap_query: Query<(&TilemapSize, &TilemapGridSize, &GlobalTransform), With<MainTileMap>>,
     quadtree: Res<CollisionQuadTree>,
 ) {
     if let Ok((entity, action_state, player)) = query.get_single_mut() {
@@ -139,30 +141,41 @@ pub fn start_movement(
         if destination_x == 0.0 && destination_y == 0.0 {
             return;
         }
-        if let Ok(window) = windows.get_single() {
-            let is_diagonal = destination_x != 0.0 && destination_y != 0.0;
-            let start_2d = get_tile_to_world(player.tile_position, window);
-            let start = Vec3::new(start_2d.x, start_2d.y, player.z);
-            let target = Vec3::new(
-                start.x + (destination_x * TILE_SIZE),
-                start.y + (destination_y * TILE_SIZE),
-                player.z,
-            );
-            let collision_query =
-                quadtree.query::<QOr<(Overlap, Contain, Contained)>>(&CollisionRect::from(
-                    Rect::from_center_size(Vec2::new(target.x, target.y), Vec2::new(15.0, 15.0)),
-                ));
-            if collision_query.is_empty() {
-                commands.entity(entity).insert(Movement {
-                    start,
-                    target,
-                    progress: 0.0,
-                    speed: if is_diagonal {
-                        VELOCITY / 2.0f32.sqrt()
-                    } else {
-                        VELOCITY
-                    },
-                });
+        if let Ok((map_size, grid_size, map_global_transform)) = tilemap_query.get_single() {
+            let map_world_min_x =
+                map_global_transform.translation().x - (map_size.x as f32 * grid_size.x / 2.0);
+            let map_world_max_x = map_world_min_x + map_size.x as f32 * grid_size.x;
+            let map_world_min_y =
+                map_global_transform.translation().y - (map_size.y as f32 * grid_size.y / 2.0);
+            let map_world_max_y = map_world_min_y + map_size.y as f32 * grid_size.y;
+
+            if let Ok(window) = windows.get_single() {
+                let is_diagonal = destination_x != 0.0 && destination_y != 0.0;
+                let start_2d = get_tile_to_world(player.tile_position, window);
+                let start = Vec3::new(start_2d.x, start_2d.y, player.z);
+                let target = Vec3::new(
+                    (start.x + (destination_x * TILE_SIZE)).clamp(map_world_min_x, map_world_max_x),
+                    (start.y + (destination_y * TILE_SIZE)).clamp(map_world_min_y, map_world_max_y),
+                    player.z,
+                );
+                let collision_query = quadtree.query::<QOr<(Overlap, Contain, Contained)>>(
+                    &CollisionRect::from(Rect::from_center_size(
+                        Vec2::new(target.x, target.y),
+                        Vec2::new(15.0, 15.0),
+                    )),
+                );
+                if collision_query.is_empty() {
+                    commands.entity(entity).insert(Movement {
+                        start,
+                        target,
+                        progress: 0.0,
+                        speed: if is_diagonal {
+                            VELOCITY / 2.0f32.sqrt()
+                        } else {
+                            VELOCITY
+                        },
+                    });
+                }
             }
         }
     }
