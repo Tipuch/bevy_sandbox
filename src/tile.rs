@@ -13,7 +13,7 @@ pub fn spawn_map(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands.spawn((
         TiledMapHandle(map_handle),
-        TiledMapAnchor::Center,
+        TilemapAnchor::Center,
         MainTileMap,
         TilemapGridSize {
             x: TILE_SIZE,
@@ -67,6 +67,7 @@ impl TiledPhysicsBackend for QuadTreePhysicsBackend {
         _tiled_map: &TiledMap,
         _filter: &TiledNameFilter,
         collider: &TiledCollider,
+        _anchor: &TilemapAnchor,
     ) -> Vec<TiledColliderSpawnInfos> {
         match collider {
             TiledCollider::Object {

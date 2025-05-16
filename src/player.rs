@@ -14,10 +14,7 @@ use bevy::{
 };
 use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapSize};
 use bevy_quadtree::{CollisionRect, Contain, Contained, Overlap, QOr, QuadTree};
-use leafwing_input_manager::{
-    InputManagerBundle,
-    prelude::{ActionState, InputMap},
-};
+use leafwing_input_manager::prelude::{ActionState, InputMap};
 
 use crate::actions::{MoveAction, get_animation_from_action};
 use crate::tile::{MainTileMap, TILE_SIZE, get_tile_to_world, get_world_to_tile};
@@ -87,11 +84,11 @@ pub fn spawn_player(
         Some(UVec2::new(0, 0)),
     );
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    if let Ok(window) = windows.get_single() {
+    if let Ok(window) = windows.single() {
         let tile_pos = IVec2::new(0, 0);
         let world_pos = get_tile_to_world(tile_pos, window);
         commands
-            .spawn(InputManagerBundle::with_map(input_map))
+            .spawn(input_map)
             .insert(Player {
                 tile_position: tile_pos,
                 z: 1.0,
@@ -123,7 +120,7 @@ pub fn start_movement(
     tilemap_query: Query<(&TilemapSize, &TilemapGridSize, &GlobalTransform), With<MainTileMap>>,
     quadtree: Res<CollisionQuadTree>,
 ) {
-    if let Ok((entity, action_state, player)) = query.get_single_mut() {
+    if let Ok((entity, action_state, player)) = query.single_mut() {
         let mut destination_x: f32 = 0.0;
         let mut destination_y: f32 = 0.0;
         if action_state.pressed(&MoveAction::Forward) {
@@ -141,7 +138,7 @@ pub fn start_movement(
         if destination_x == 0.0 && destination_y == 0.0 {
             return;
         }
-        if let Ok((map_size, grid_size, map_global_transform)) = tilemap_query.get_single() {
+        if let Ok((map_size, grid_size, map_global_transform)) = tilemap_query.single() {
             let map_world_min_x =
                 map_global_transform.translation().x - (map_size.x as f32 * grid_size.x / 2.0);
             let map_world_max_x = map_world_min_x + map_size.x as f32 * grid_size.x;
@@ -149,7 +146,7 @@ pub fn start_movement(
                 map_global_transform.translation().y - (map_size.y as f32 * grid_size.y / 2.0);
             let map_world_max_y = map_world_min_y + map_size.y as f32 * grid_size.y;
 
-            if let Ok(window) = windows.get_single() {
+            if let Ok(window) = windows.single() {
                 let is_diagonal = destination_x != 0.0 && destination_y != 0.0;
                 let start_2d = get_tile_to_world(player.tile_position, window);
                 let start = Vec3::new(start_2d.x, start_2d.y, player.z);
@@ -187,10 +184,10 @@ pub fn handle_movement(
     windows: Query<&Window, With<PrimaryWindow>>,
     mut query: Query<(Entity, &mut Transform, &mut Movement, &mut Player)>,
 ) {
-    if let Ok((entity, mut transform, mut movement, mut player)) = query.get_single_mut() {
+    if let Ok((entity, mut transform, mut movement, mut player)) = query.single_mut() {
         movement.progress += time.delta_secs() * movement.speed;
         movement.progress = movement.progress.min(1.0);
-        if let Ok(window) = windows.get_single() {
+        if let Ok(window) = windows.single() {
             //TODO add Z to the equation, in case we're going up or down
             let start = Vec3::new(movement.start.x, movement.start.y, movement.start.z);
             let end = Vec3::new(movement.target.x, movement.target.y, movement.target.z);
@@ -216,7 +213,7 @@ pub fn start_movement_animation(
         Option<&AnimationConfig>,
     )> = query.join_filtered(&mut animation_query);
     if let Ok((entity, action_state, mut sprite, animation_config_option)) =
-        query_with_animation.query().get_single_mut()
+        query_with_animation.query().single_mut()
     {
         if action_state.pressed(&MoveAction::Forward) {
             overwrite_animation(
@@ -251,7 +248,7 @@ pub fn start_movement_animation(
                 get_animation_from_action(MoveAction::Right),
             );
         } else if let Ok((Some(animation_config), mut sprite, _player)) =
-            animation_query.get_single_mut()
+            animation_query.single_mut()
         {
             {
                 if let Some(atlas) = &mut sprite.texture_atlas {
@@ -295,7 +292,7 @@ pub fn execute_movement_animation(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Sprite, &mut AnimationConfig)>,
 ) {
-    if let Ok((entity, mut sprite, mut animation_config)) = query.get_single_mut() {
+    if let Ok((entity, mut sprite, mut animation_config)) = query.single_mut() {
         animation_config.frame_timer.tick(time.delta());
         if animation_config.frame_timer.just_finished() {
             if let Some(atlas) = &mut sprite.texture_atlas {
